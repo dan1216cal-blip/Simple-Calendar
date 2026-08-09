@@ -283,8 +283,8 @@ function Home() {
           <div className="flex items-start gap-3">
             <div className="rounded-xl bg-[hsl(var(--secondary))] p-2 text-[hsl(var(--primary))]"><CircleHelp size={17} /></div>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-bold">A little help</p>
-              <p className="mt-1 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]">Tap a date to see its moments. Use Add to save something to the selected day.</p>
+              <p className="text-[12px] font-bold">Need help?</p>
+              <p className="mt-1 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]">Contact at <a href="mailto:dan.1216cal@gmail.com" data-testid="link-help-email" className="font-bold text-[hsl(var(--primary))] underline decoration-[hsl(var(--primary)/.35)] underline-offset-2">dan.1216cal@gmail.com</a></p>
             </div>
             <button type="button" aria-label="Close help" data-testid="button-close-mobile-help" onClick={() => setIsHelpOpen(false)} className="rounded-full p-1 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]"><X size={15} /></button>
           </div>
