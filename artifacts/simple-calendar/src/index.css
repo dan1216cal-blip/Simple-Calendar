@@ -104,9 +104,20 @@
 .drawer-enter { animation: slide-in .35s cubic-bezier(.22,1,.36,1) both; }
 .soft-shadow { box-shadow: var(--shadow-sm); }
 .deep-shadow { box-shadow: var(--shadow-md); }
+.mobile-bottom-nav { animation: rise .45s cubic-bezier(.22,1,.36,1) both; }
+.mobile-nav-button { display: flex; min-height: 52px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 16px; color: hsl(var(--muted-foreground)); transition: color .2s ease, background-color .2s ease, transform .2s ease; }
+.mobile-nav-button span { font-family: var(--app-font-mono); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.mobile-nav-button:hover, .mobile-nav-button:focus-visible { background: hsl(var(--secondary)); color: hsl(var(--primary)); }
+.mobile-nav-button:active { transform: scale(.94); }
+.mobile-nav-button:focus-visible { outline: 3px solid hsl(var(--ring) / .3); outline-offset: 1px; }
+.mobile-nav-add { margin: -15px 5px 0; min-height: 58px; border: 4px solid hsl(var(--card)); background: hsl(var(--accent)); color: hsl(var(--foreground)); box-shadow: 0 7px 16px hsl(var(--accent) / .27); }
+.mobile-nav-add:hover, .mobile-nav-add:focus-visible { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
+.mobile-help-sheet { animation: rise .25s cubic-bezier(.22,1,.36,1) both; }
 
 @media (max-width: 767px) {
-  .calendar-cell { min-height: 74px; }
+  .calendar-cell { min-height: 68px; padding: .45rem; }
   .calendar-grid { gap: 1px; }
   .calendar-cell:hover { transform: none; }
+  .calendar-cell .event-pill { max-width: 100%; padding: .2rem .3rem; font-size: 8px; }
+  .calendar-cell .day-number { height: 1.55rem; min-width: 1.55rem; font-size: 10px; }
 }

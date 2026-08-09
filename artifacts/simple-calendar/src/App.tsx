@@ -1,6 +1,6 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, CirclePlus, Clock3, Leaf, Menu, Plus, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleHelp, CirclePlus, Clock3, Crown, Home as HomeIcon, Leaf, Menu, Plus, Trash2, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -52,6 +52,8 @@ function Home() {
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const detailPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
@@ -115,6 +117,18 @@ function Home() {
     setEvents((current) => current.filter((event) => event.id !== id));
     setFeedback('Event removed');
     window.setTimeout(() => setFeedback(''), 2400);
+  }
+
+  function openAddForm() {
+    setIsHelpOpen(false);
+    setIsAdding(true);
+    window.setTimeout(() => detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+  }
+
+  function showIntention() {
+    setIsHelpOpen(false);
+    setFeedback('Make room for one meaningful thing');
+    window.setTimeout(() => setFeedback(''), 2600);
   }
 
   return (
@@ -202,7 +216,7 @@ function Home() {
               </div>
             </div>
 
-            <aside className="drawer-enter xl:pt-8">
+            <aside ref={detailPanelRef} className="drawer-enter xl:pt-8">
               <div className="rounded-[20px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 soft-shadow sm:p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -245,6 +259,36 @@ function Home() {
             </aside>
           </div>
         </section>
+
+        <nav aria-label="Mobile navigation" className="mobile-bottom-nav fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[22px] border border-[hsl(var(--border))] bg-[hsl(var(--card)/.94)] p-2 shadow-[var(--shadow-md)] backdrop-blur-md md:hidden">
+          <button type="button" aria-label="Go to today" data-testid="button-mobile-home" onClick={goToToday} className="mobile-nav-button">
+            <HomeIcon size={19} strokeWidth={2.2} />
+            <span>Home</span>
+          </button>
+          <button type="button" aria-label="Add event" data-testid="button-mobile-add" onClick={openAddForm} className="mobile-nav-button mobile-nav-add">
+            <Plus size={22} strokeWidth={2.5} />
+            <span>Add</span>
+          </button>
+          <button type="button" aria-label="Set an intention" data-testid="button-mobile-crown" onClick={showIntention} className="mobile-nav-button">
+            <Crown size={19} strokeWidth={2.1} />
+            <span>Focus</span>
+          </button>
+          <button type="button" aria-label="How to use the calendar" data-testid="button-mobile-help" onClick={() => setIsHelpOpen((open) => !open)} className="mobile-nav-button">
+            <CircleHelp size={19} strokeWidth={2.1} />
+            <span>Help</span>
+          </button>
+        </nav>
+
+        {isHelpOpen && <div className="mobile-help-sheet fixed inset-x-3 bottom-[88px] z-40 rounded-[18px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 shadow-[var(--shadow-md)] md:hidden" data-testid="mobile-help-sheet">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-[hsl(var(--secondary))] p-2 text-[hsl(var(--primary))]"><CircleHelp size={17} /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-bold">A little help</p>
+              <p className="mt-1 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]">Tap a date to see its moments. Use Add to save something to the selected day.</p>
+            </div>
+            <button type="button" aria-label="Close help" data-testid="button-close-mobile-help" onClick={() => setIsHelpOpen(false)} className="rounded-full p-1 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]"><X size={15} /></button>
+          </div>
+        </div>}
       </div>
     </main>
   );
