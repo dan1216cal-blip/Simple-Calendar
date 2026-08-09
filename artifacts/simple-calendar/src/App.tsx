@@ -53,6 +53,7 @@ function Home() {
   const [newTime, setNewTime] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isPremiumOpen, setIsPremiumOpen] = useState(false);
   const detailPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -127,8 +128,7 @@ function Home() {
 
   function showIntention() {
     setIsHelpOpen(false);
-    setFeedback('Make room for one meaningful thing');
-    window.setTimeout(() => setFeedback(''), 2600);
+    setIsPremiumOpen(true);
   }
 
   return (
@@ -271,7 +271,7 @@ function Home() {
           </button>
           <button type="button" aria-label="Set an intention" data-testid="button-mobile-crown" onClick={showIntention} className="mobile-nav-button">
             <Crown size={19} strokeWidth={2.1} />
-            <span>Focus</span>
+            <span>Premium</span>
           </button>
           <button type="button" aria-label="How to use the calendar" data-testid="button-mobile-help" onClick={() => setIsHelpOpen((open) => !open)} className="mobile-nav-button">
             <CircleHelp size={19} strokeWidth={2.1} />
@@ -288,6 +288,34 @@ function Home() {
             </div>
             <button type="button" aria-label="Close help" data-testid="button-close-mobile-help" onClick={() => setIsHelpOpen(false)} className="rounded-full p-1 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]"><X size={15} /></button>
           </div>
+        </div>}
+
+        {isPremiumOpen && <div className="premium-backdrop fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-3 sm:items-center" data-testid="premium-subscription-modal">
+          <section role="dialog" aria-modal="true" aria-labelledby="premium-title" className="premium-card relative w-full max-w-[420px] overflow-hidden rounded-[28px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-[var(--shadow-md)]">
+            <div className="premium-card-glow" />
+            <button type="button" aria-label="Close subscription" data-testid="button-close-premium" onClick={() => setIsPremiumOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-[hsl(var(--card)/.75)] p-2 text-[hsl(var(--muted-foreground))] backdrop-blur hover:bg-[hsl(var(--secondary))]"><X size={16} /></button>
+            <div className="relative p-6 sm:p-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] shadow-[0_8px_18px_hsl(var(--accent)/.25)]">
+                <Crown size={23} strokeWidth={2} />
+              </div>
+              <p className="mt-7 font-mono text-[10px] uppercase tracking-[.2em] text-[hsl(var(--primary))]">Small Hours Plus</p>
+              <h2 id="premium-title" className="mt-2 max-w-[280px] font-serif text-[34px] font-bold leading-[.98] tracking-[-.045em]">More room for what matters.</h2>
+              <p className="mt-4 max-w-[330px] text-[13px] leading-6 text-[hsl(var(--muted-foreground))]">A quieter, more personal calendar with the details that make it yours.</p>
+
+              <div className="mt-7 space-y-3">
+                <div className="premium-benefit"><span className="premium-check">✓</span><div><p className="text-[13px] font-bold">No ads</p><p className="text-[11px] text-[hsl(var(--muted-foreground))]">A calm calendar, without distractions.</p></div></div>
+                <div className="premium-benefit"><span className="premium-check">✓</span><div><p className="text-[13px] font-bold">Custom themes</p><p className="text-[11px] text-[hsl(var(--muted-foreground))]">Make your calendar feel like your own space.</p></div></div>
+                <div className="premium-benefit"><span className="premium-check">✓</span><div><p className="text-[13px] font-bold">Dark mode</p><p className="text-[11px] text-[hsl(var(--muted-foreground))]">Plan late into the evening with softer light.</p></div></div>
+              </div>
+
+              <div className="mt-7 flex items-end justify-between border-t border-[hsl(var(--border))] pt-5">
+                <div><span className="font-serif text-[31px] font-bold tracking-[-.04em]">$2.99</span><span className="ml-1 text-[12px] text-[hsl(var(--muted-foreground))]">/ month</span></div>
+                <span className="rounded-full bg-[hsl(var(--secondary))] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">Premium</span>
+              </div>
+              <button type="button" disabled data-testid="button-subscribe-premium" className="mt-5 w-full cursor-not-allowed rounded-xl bg-[hsl(var(--primary)/.45)] px-4 py-3.5 text-[12px] font-bold text-[hsl(var(--primary-foreground))]">Checkout coming soon</button>
+              <p className="mt-3 text-center text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Subscriptions aren’t connected yet, so you won’t be charged.</p>
+            </div>
+          </section>
         </div>}
       </div>
     </main>
