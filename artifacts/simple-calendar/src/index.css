@@ -113,11 +113,6 @@
 .mobile-nav-add { margin: -15px 5px 0; min-height: 58px; border: 4px solid hsl(var(--card)); background: hsl(var(--accent)); color: hsl(var(--foreground)); box-shadow: 0 7px 16px hsl(var(--accent) / .27); }
 .mobile-nav-add:hover, .mobile-nav-add:focus-visible { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
 .mobile-help-sheet { animation: rise .25s cubic-bezier(.22,1,.36,1) both; }
-.premium-backdrop { animation: pop .2s ease-out both; }
-.premium-card { animation: rise .3s cubic-bezier(.22,1,.36,1) both; }
-.premium-card-glow { position: absolute; top: -100px; right: -90px; width: 230px; height: 230px; border-radius: 999px; background: hsl(var(--accent) / .2); filter: blur(2px); }
-.premium-benefit { display: flex; align-items: flex-start; gap: .7rem; border-radius: 14px; background: hsl(var(--secondary) / .52); padding: .75rem; }
-.premium-check { display: inline-flex; height: 22px; width: 22px; flex: 0 0 auto; align-items: center; justify-content: center; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 12px; font-weight: 800; }
 
 @media (max-width: 767px) {
   .calendar-cell { min-height: 68px; padding: .45rem; }
