@@ -14,6 +14,8 @@ type CalendarEvent = {
   time?: string;
 };
 
+type CalendarView = 'day' | 'week' | 'month';
+
 const queryClient = new QueryClient();
 const STORAGE_KEY = 'small-hours-calendar-events';
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -32,6 +34,12 @@ function getMondayOffset(date: Date) {
   return (date.getDay() + 6) % 7;
 }
 
+function startOfWeek(date: Date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  start.setDate(start.getDate() - getMondayOffset(start));
+  return start;
+}
+
 function readEvents(): CalendarEvent[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -47,8 +55,9 @@ function Home() {
   const [events, setEvents] = useState<CalendarEvent[]>(readEvents);
   const [shownMonth, setShownMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [viewMode, setViewMode] = useState<CalendarView>('month');
   const [isAdding, setIsAdding] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -83,22 +92,56 @@ function Home() {
     const d = parseDateKey(event.date);
     return d.getFullYear() === shownMonth.getFullYear() && d.getMonth() === shownMonth.getMonth();
   }).length;
+  const weekDates = useMemo(() => {
+    const start = startOfWeek(parseDateKey(selectedDate));
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return date;
+    });
+  }, [selectedDate]);
+  const weekEventCount = events.filter((event) => weekDates.some((date) => dateKey(date) === event.date)).length;
+  const periodEventCount = viewMode === 'month' ? monthEventCount : viewMode === 'week' ? weekEventCount : selectedEvents.length;
   const selectedDateLabel = parseDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const periodCaption = viewMode === 'month'
+    ? `Month / ${shownMonth.getFullYear()}`
+    : viewMode === 'week'
+      ? `Week / ${weekDates[0].getFullYear()}`
+      : `Day / ${parseDateKey(selectedDate).getFullYear()}`;
+  const periodHeading = viewMode === 'month'
+    ? MONTHS[shownMonth.getMonth()]
+    : viewMode === 'week'
+      ? `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      : parseDateKey(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   function goToToday() {
     setShownMonth(new Date(today.getFullYear(), today.getMonth(), 1));
     setSelectedDate(todayKey);
-    setIsMobileMenuOpen(false);
+    setIsViewMenuOpen(false);
   }
 
-  function shiftMonth(amount: number) {
-    setShownMonth(new Date(shownMonth.getFullYear(), shownMonth.getMonth() + amount, 1));
+  function shiftPeriod(amount: number) {
+    if (viewMode === 'month') {
+      setShownMonth(new Date(shownMonth.getFullYear(), shownMonth.getMonth() + amount, 1));
+      return;
+    }
+    const nextDate = parseDateKey(selectedDate);
+    nextDate.setDate(nextDate.getDate() + (viewMode === 'week' ? amount * 7 : amount));
+    setSelectedDate(dateKey(nextDate));
+    setShownMonth(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
   }
 
   function chooseDate(key: string) {
     setSelectedDate(key);
+    const nextDate = parseDateKey(key);
+    setShownMonth(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
     setIsAdding(false);
     setFeedback('');
+  }
+
+  function chooseView(view: CalendarView) {
+    setViewMode(view);
+    setIsViewMenuOpen(false);
   }
 
   function submitEvent(event: FormEvent<HTMLFormElement>) {
@@ -128,7 +171,7 @@ function Home() {
   return (
     <main className="calendar-app bg-[hsl(var(--background))]">
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[1480px]">
-        <aside className={`${isMobileMenuOpen ? 'flex' : 'hidden'} fixed inset-0 z-30 flex-col bg-[hsl(var(--primary))] p-7 text-[hsl(var(--primary-foreground))] md:relative md:flex md:w-[250px] md:shrink-0 md:p-8`}>
+        <aside className="hidden fixed inset-0 z-30 flex-col bg-[hsl(var(--primary))] p-7 text-[hsl(var(--primary-foreground))] md:relative md:flex md:w-[250px] md:shrink-0 md:p-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]">
@@ -139,7 +182,6 @@ function Home() {
                 <p className="font-mono text-[9px] uppercase tracking-[.18em] opacity-65">a quieter calendar</p>
               </div>
             </div>
-            <button type="button" aria-label="Close menu" data-testid="button-close-menu" onClick={() => setIsMobileMenuOpen(false)} className="rounded-full p-2 hover:bg-white/10 md:hidden"><X size={19} /></button>
           </div>
 
           <div className="mt-20 hidden md:block">
@@ -163,7 +205,12 @@ function Home() {
         <section className="page-enter min-w-0 flex-1 px-5 pb-12 pt-5 sm:px-8 sm:pt-7 lg:px-12 lg:pt-10">
           <header className="flex items-center justify-between">
             <div className="flex items-center gap-3 md:hidden">
-              <button type="button" aria-label="Open menu" data-testid="button-open-menu" onClick={() => setIsMobileMenuOpen(true)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 text-[hsl(var(--foreground))]"><Menu size={18} /></button>
+              <div className="relative">
+                <button type="button" aria-expanded={isViewMenuOpen} aria-haspopup="menu" aria-label="Change calendar view" data-testid="button-change-view" onClick={() => setIsViewMenuOpen((open) => !open)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 text-[hsl(var(--foreground))]"><Menu size={18} /></button>
+                {isViewMenuOpen && <div role="menu" aria-label="Calendar view options" className="view-menu absolute left-0 top-12 z-40 w-32 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-1.5 shadow-[var(--shadow-md)]" data-testid="view-menu">
+                  {(['day', 'week', 'month'] as CalendarView[]).map((view) => <button key={view} type="button" role="menuitemradio" aria-checked={viewMode === view} data-testid={`button-view-${view}`} onClick={() => chooseView(view)} className={`view-menu-item ${viewMode === view ? 'is-active' : ''}`}>{view[0].toUpperCase() + view.slice(1)}</button>)}
+                </div>}
+              </div>
               <span className="font-serif text-[18px] font-bold">small hours</span>
             </div>
             <div className="hidden md:block">
@@ -177,36 +224,59 @@ function Home() {
             <div>
               <div className="mb-4 flex items-end justify-between">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[hsl(var(--muted-foreground))]">Month / {shownMonth.getFullYear()}</p>
-                  <h2 data-testid="text-current-month" className="mt-1 font-serif text-[34px] font-bold leading-none tracking-[-.04em] sm:text-[42px]">{MONTHS[shownMonth.getMonth()]}</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[hsl(var(--muted-foreground))]">{periodCaption}</p>
+                  <h2 data-testid="text-current-month" className="mt-1 font-serif text-[34px] font-bold leading-none tracking-[-.04em] sm:text-[42px]">{periodHeading}</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="mr-2 hidden font-mono text-[10px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))] sm:inline">{monthEventCount} {monthEventCount === 1 ? 'moment' : 'moments'}</span>
-                  <button type="button" aria-label="Previous month" data-testid="button-previous-month" onClick={() => shiftMonth(-1)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 transition hover:-translate-x-0.5 hover:border-[hsl(var(--primary)/.5)]"><ChevronLeft size={17} /></button>
-                  <button type="button" aria-label="Next month" data-testid="button-next-month" onClick={() => shiftMonth(1)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 transition hover:translate-x-0.5 hover:border-[hsl(var(--primary)/.5)]"><ChevronRight size={17} /></button>
+                  <span className="mr-2 hidden font-mono text-[10px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))] sm:inline">{periodEventCount} {periodEventCount === 1 ? 'moment' : 'moments'}</span>
+                  <button type="button" aria-label={`Previous ${viewMode}`} data-testid="button-previous-period" onClick={() => shiftPeriod(-1)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 transition hover:-translate-x-0.5 hover:border-[hsl(var(--primary)/.5)]"><ChevronLeft size={17} /></button>
+                  <button type="button" aria-label={`Next ${viewMode}`} data-testid="button-next-period" onClick={() => shiftPeriod(1)} className="icon-button rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2.5 transition hover:translate-x-0.5 hover:border-[hsl(var(--primary)/.5)]"><ChevronRight size={17} /></button>
                 </div>
               </div>
 
               <div className="overflow-hidden rounded-[20px] border border-[hsl(var(--border))] bg-[hsl(var(--card)/.65)] soft-shadow">
-                <div className="grid grid-cols-7 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary)/.42)]">
-                  {WEEKDAYS.map((day, index) => <div key={day} className={`py-3 text-center font-mono text-[10px] uppercase tracking-[.12em] ${index > 4 ? 'text-[hsl(var(--accent)/.95)]' : 'text-[hsl(var(--muted-foreground))]'}`}>{day}</div>)}
-                </div>
-                <div className="calendar-grid grid grid-cols-7 gap-px bg-[hsl(var(--border))]">
-                  {monthCells.map(({ date, inMonth }) => {
+                {viewMode === 'month' && <>
+                  <div className="grid grid-cols-7 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary)/.42)]">
+                    {WEEKDAYS.map((day, index) => <div key={day} className={`py-3 text-center font-mono text-[10px] uppercase tracking-[.12em] ${index > 4 ? 'text-[hsl(var(--accent)/.95)]' : 'text-[hsl(var(--muted-foreground))]'}`}>{day}</div>)}
+                  </div>
+                  <div className="calendar-grid grid grid-cols-7 gap-px bg-[hsl(var(--border))]">
+                    {monthCells.map(({ date, inMonth }) => {
+                      const key = dateKey(date);
+                      const dayEvents = events.filter((event) => event.date === key);
+                      return (
+                        <button key={key} type="button" data-testid={`button-date-${key}`} onClick={() => chooseDate(key)} className={`calendar-cell group relative min-h-[102px] bg-[hsl(var(--card))] p-2 text-left sm:min-h-[122px] sm:p-3 ${!inMonth ? 'opacity-40' : ''} ${key === selectedDate ? 'is-selected' : ''} ${key === todayKey ? 'is-today' : ''}`}>
+                          <span className="day-number inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-medium">{date.getDate()}</span>
+                          {dayEvents.length > 0 && <div className="mt-2 space-y-1">
+                            {dayEvents.slice(0, 2).map((event) => <div key={event.id} className="event-pill truncate rounded-md bg-[hsl(var(--primary)/.11)] px-1.5 py-1 text-[10px] font-semibold text-[hsl(var(--primary))]">{event.title}</div>)}
+                            {dayEvents.length > 2 && <p className="pl-1 text-[9px] font-bold text-[hsl(var(--muted-foreground))]">+{dayEvents.length - 2} more</p>}
+                          </div>}
+                          {dayEvents.length === 0 && inMonth && <span className="absolute bottom-3 right-3 hidden text-[14px] text-[hsl(var(--primary)/.35)] transition group-hover:block">+</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>}
+
+                {viewMode === 'week' && <div className="week-grid grid grid-cols-7 gap-px bg-[hsl(var(--border))]">
+                  {weekDates.map((date, index) => {
                     const key = dateKey(date);
                     const dayEvents = events.filter((event) => event.date === key);
-                    return (
-                      <button key={key} type="button" data-testid={`button-date-${key}`} onClick={() => chooseDate(key)} className={`calendar-cell group relative min-h-[102px] bg-[hsl(var(--card))] p-2 text-left sm:min-h-[122px] sm:p-3 ${!inMonth ? 'opacity-40' : ''} ${key === selectedDate ? 'is-selected' : ''} ${key === todayKey ? 'is-today' : ''}`}>
-                        <span className="day-number inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-medium">{date.getDate()}</span>
-                        {dayEvents.length > 0 && <div className="mt-2 space-y-1">
-                          {dayEvents.slice(0, 2).map((event) => <div key={event.id} className="event-pill truncate rounded-md bg-[hsl(var(--primary)/.11)] px-1.5 py-1 text-[10px] font-semibold text-[hsl(var(--primary))]">{event.title}</div>)}
-                          {dayEvents.length > 2 && <p className="pl-1 text-[9px] font-bold text-[hsl(var(--muted-foreground))]">+{dayEvents.length - 2} more</p>}
-                        </div>}
-                        {dayEvents.length === 0 && inMonth && <span className="absolute bottom-3 right-3 hidden text-[14px] text-[hsl(var(--primary)/.35)] transition group-hover:block">+</span>}
-                      </button>
-                    );
+                    return <button key={key} type="button" data-testid={`button-week-date-${key}`} onClick={() => chooseDate(key)} className={`week-day min-h-[260px] bg-[hsl(var(--card))] p-2 text-left sm:min-h-[330px] sm:p-3 ${key === selectedDate ? 'is-selected' : ''} ${key === todayKey ? 'is-today' : ''}`}>
+                      <span className="font-mono text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">{WEEKDAYS[index]}</span>
+                      <span className="day-number mt-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-medium">{date.getDate()}</span>
+                      <div className="mt-3 space-y-2">
+                        {dayEvents.map((event) => <div key={event.id} className="event-pill rounded-lg bg-[hsl(var(--primary)/.11)] p-2 text-[10px] font-semibold text-[hsl(var(--primary))]"><span className="block truncate">{event.title}</span>{event.time && <span className="mt-1 block font-mono text-[8px] font-normal opacity-70">{event.time}</span>}</div>)}
+                      </div>
+                    </button>;
                   })}
-                </div>
+                </div>}
+
+                {viewMode === 'day' && <div className="day-view min-h-[330px] bg-[hsl(var(--card))] p-5 sm:min-h-[420px] sm:p-8">
+                  <div className="day-view-date rounded-2xl border border-dashed border-[hsl(var(--primary)/.35)] p-5">
+                    <span className="font-mono text-[10px] uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">{selectedDateLabel}</span>
+                    {selectedEvents.length > 0 ? <div className="mt-5 space-y-3">{selectedEvents.map((event) => <div key={event.id} className="event-row flex items-center gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background)/.55)] p-3"><span className="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--accent))]" /><span className="text-[13px] font-bold">{event.title}</span>{event.time && <span className="ml-auto font-mono text-[10px] text-[hsl(var(--muted-foreground))]">{event.time}</span>}</div>)}</div> : <p className="mt-5 text-[12px] text-[hsl(var(--muted-foreground))]">Nothing planned yet. Add a moment below.</p>}
+                  </div>
+                </div>}
               </div>
             </div>
 
